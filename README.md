@@ -64,9 +64,15 @@ sudo usermod -aG lp $USER        # then log out and back in
 - **CSV batch printing**: one label per row. The "download sample CSV" button generates the right header.
 - **Auto-fit text**: shrinks the font so the value fits the width.
 - **History** of the last 50 print jobs, with one-click reprint.
+- **Copy and paste**: Ctrl+C/X/V, toolbar buttons or the right-click menu (copy, paste here,
+  duplicate, delete). Works across templates; images and text from other apps can be pasted too.
+- **Exact shape size**: width/height of rectangles and ellipses (length for lines) in mm or pixels.
+- **Printer margins shown on the canvas**: the label is drawn at its physical size and the strip
+  the printer cannot print is shaded gray; elements that cross into it are flagged in red.
+- **Light/dark theme**: follows the system by default, toggle in the header.
 - 1-bit preview exactly as it will be printed, adjustable threshold, dithering for photos.
 - Printer status (cover open, no media…) and detection of the loaded media.
-- Optional password, undo/redo, keyboard shortcuts (Del, Ctrl+Z/Y/D, arrow keys).
+- Optional password, undo/redo, keyboard shortcuts (Del, Ctrl+Z/Y/D, Ctrl+C/X/V, arrow keys).
 
 ## Command line
 
@@ -96,6 +102,9 @@ docker exec ql570 python -m app.cli status                             # inside 
 - **"Sem permissão" (permission denied)**: check `LP_GID` (`getent group lp`) and the owner of `/dev/usb/lp*`.
   Without Docker: join the `lp` group and log out/in.
 - **Print shifted to one side**: adjust the media's `offset_r` in `app/labels.py`.
+- **A shape as long as the label does not fit**: the printable area is smaller than the label
+  (e.g. 62 mm tape × 90 mm prints about 58.9 × 84.1 mm; continuous tape loses ~3 mm at each end).
+  The exact size is shown under the media selector.
 
 ## Tests
 
