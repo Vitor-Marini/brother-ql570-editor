@@ -94,8 +94,12 @@
       <label class="inline">Zoom <input type="range" id="zoom" min="0.3" max="3" step="0.05" value="1"></label>
     </div>
     <div class="canvas-wrap" id="canvas-wrap">
-      <div class="tape" id="tape"><canvas id="c"></canvas></div>
+      <div class="tape" id="tape" title="Faixa cinza: margem que a impressora não imprime"><canvas id="c"></canvas>
+        <span class="margin m-left"></span><span class="margin m-right"></span>
+        <span class="margin m-top"></span><span class="margin m-bottom"></span>
+      </div>
     </div>
+    <p id="margin-warn" class="margin-warn" hidden></p>
     <p class="hint center">Use <code>{{coluna}}</code> em textos, códigos de barras e QR para imprimir em lote com CSV.</p>
   </section>
 
@@ -168,6 +172,14 @@
   </div>
   <div id="history-body" class="dialog-body"></div>
 </dialog>
+
+<div id="ctx-menu" class="ctx-menu" hidden>
+  <button data-action="copy" data-needs-sel>Copiar <kbd>Ctrl+C</kbd></button>
+  <button data-action="paste">Colar aqui <kbd>Ctrl+V</kbd></button>
+  <button data-action="duplicate" data-needs-sel>Duplicar <kbd>Ctrl+D</kbd></button>
+  <hr>
+  <button data-action="delete" data-needs-sel class="danger">Excluir <kbd>Del</kbd></button>
+</div>
 
 <div id="toast"></div>
 <script src="/static/app.js"></script>

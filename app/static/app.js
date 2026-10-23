@@ -10,7 +10,7 @@ const HAS_VAR = /\{\{\s*[\wÀ-ú]+\s*\}\}/;
 const EXTRA_PROPS = ['data', 'imageSmoothing'];
 
 const $ = (s) => document.querySelector(s);
-const state = { labels: [], label: null, docW: 0, docH: 0, zoom: 1, csvRows: null, printing: false, fields: {}, currentName: '' };
+const state = { labels: [], label: null, docW: 0, docH: 0, zoom: 1, csvRows: null, printing: false, fields: {}, currentName: '', margins: { x: 0, y: 0 } };
 
 const canvas = new fabric.Canvas('c', { backgroundColor: '#fff', preserveObjectStacking: true });
 fabric.Object.prototype.set({ cornerColor: '#c8102e', borderColor: '#c8102e', cornerSize: 9, transparentCorners: false });
@@ -135,18 +135,31 @@ function computeDoc() {
   return docFor(state.label, $('#orientation').value, +$('#length-mm').value);
 }
 
+/** Margens não imprimíveis (em pontos, por lado) entre a área imprimível e a borda física. */
+function unprintableMargins(l, orientation) {
+  const across = Math.max(0, (l.width_mm * DPMM - l.printable_w) / 2);
+  const along = l.kind === 'endless' ? l.feed_margin
+    : l.kind === 'round' ? across : Math.max(0, (l.length_mm * DPMM - l.printable_h) / 2);
+  return orientation === 'landscape' ? { x: along, y: across } : { x: across, y: along };
+}
+
+const mm = (dots) => (dots / DPMM).toFixed(1).replace('.', ',');
+
 function applyLayout(fit = true) {
   const d = computeDoc();
   state.docW = d.w;
   state.docH = d.h;
   const l = state.label;
+  state.margins = unprintableMargins(l, $('#orientation').value);
   $('#length-wrap').hidden = l.kind !== 'endless';
   $('#tape').classList.toggle('round', l.kind === 'round');
   const len = l.kind === 'endless' ? `${$('#length-mm').value} mm` : `${l.length_mm} mm`;
-  $('#label-info').textContent = `${l.width_mm} × ${len} — área imprimível ${d.w} × ${d.h} pontos (300 dpi)`;
+  $('#label-info').textContent = `${l.width_mm} × ${len} — área imprimível ${mm(d.w)} × ${mm(d.h)} mm`
+    + ` (${d.w} × ${d.h} pontos, 300 dpi). A faixa cinza ao redor não é impressa.`;
   if (fit) {
     const wrap = $('#canvas-wrap');
-    const z = Math.min((wrap.clientWidth - 100) / d.w, (wrap.clientHeight - 100) / d.h, 3);
+    const { x, y } = state.margins;
+    const z = Math.min((wrap.clientWidth - 100) / (d.w + 2 * x), (wrap.clientHeight - 100) / (d.h + 2 * y), 3);
     state.zoom = Math.max(0.2, z);
     $('#zoom').value = state.zoom;
   }
@@ -157,8 +170,59 @@ function setZoom(z) {
   state.zoom = z;
   canvas.setDimensions({ width: state.docW * z, height: state.docH * z });
   canvas.setZoom(z);
+  const { x, y } = state.margins;
+  $('#tape').style.padding = `${y * z}px ${x * z}px`;
+  layoutMarginLabels(x * z, y * z);
   canvas.requestRenderAll();
 }
+
+/* ---------- margens não imprimíveis ---------- */
+const MARGIN_TEXTS = ['Margem reservada, não imprimível', 'Não imprimível'];
+
+/** Posiciona as faixas da margem; usa o texto mais longo que couber, ou nenhum. */
+function layoutMarginLabels(px, py) {
+  const set = (sel, thick, css) => {
+    const el = $(sel);
+    Object.assign(el.style, css, { fontSize: `${Math.min(11, thick * 0.6)}px` });
+    const vertical = sel === '.m-left' || sel === '.m-right';
+    const fits = () => (vertical ? el.scrollHeight <= el.clientHeight : el.scrollWidth <= el.clientWidth);
+    el.textContent = thick < 9 ? '' : MARGIN_TEXTS.find((t) => ((el.textContent = t), fits())) || '';
+  };
+  set('.m-left', px, { width: `${px}px` });
+  set('.m-right', px, { width: `${px}px` });
+  set('.m-top', py, { height: `${py}px`, left: `${px}px`, right: `${px}px` });
+  set('.m-bottom', py, { height: `${py}px`, left: `${px}px`, right: `${px}px` });
+}
+
+/** Destaca as margens invadidas por elementos e mostra o aviso abaixo da etiqueta. */
+function checkMargins() {
+  const out = { left: false, right: false, top: false, bottom: false };
+  const tol = 0.5;
+  const offenders = canvas.getObjects().filter((o) => {
+    const r = o.getBoundingRect(true, true);
+    const sides = {
+      left: r.left < -tol, top: r.top < -tol,
+      right: r.left + r.width > state.docW + tol, bottom: r.top + r.height > state.docH + tol,
+    };
+    Object.keys(sides).forEach((k) => (out[k] ||= sides[k]));
+    return Object.values(sides).some(Boolean);
+  });
+  Object.entries(out).forEach(([k, v]) => $(`.m-${k}`).classList.toggle('out', v));
+  const sel = canvas.getActiveObjects();
+  const warn = $('#margin-warn');
+  warn.hidden = !offenders.length;
+  warn.textContent = offenders.some((o) => sel.includes(o))
+    ? '⚠ Parte do elemento selecionado fica na margem e não será impressa.'
+    : offenders.length === 1
+      ? '⚠ Parte de um elemento fica na margem e não será impressa.'
+      : `⚠ Parte de ${offenders.length} elementos fica na margem e não será impressa.`;
+}
+
+let marginsFrame;
+canvas.on('after:render', () => {
+  cancelAnimationFrame(marginsFrame);
+  marginsFrame = requestAnimationFrame(checkMargins);
+});
 
 /* ---------- inserção de elementos ---------- */
 function place(obj) {
@@ -206,7 +270,7 @@ const adders = {
     strokeWidth: 6, strokeUniform: true, data: { type: 'shape' },
   })),
   line: () => place(new fabric.Line([0, 0, state.docW * 0.6, 0], {
-    stroke: '#000', strokeWidth: 6, data: { type: 'line' },
+    stroke: '#000', strokeWidth: 6, strokeUniform: true, data: { type: 'line' },
   })),
 };
 
@@ -291,6 +355,59 @@ function grid(...children) {
   return g;
 }
 
+/* ---------- tamanho das figuras (mm ou pixels) ---------- */
+try { state.sizeUnit = localStorage.getItem('ql-size-unit') || 'mm'; } catch (_) { state.sizeUnit = 'mm'; }
+
+/** Define o tamanho externo (contorno incluído) de retângulo/elipse, em pixels. */
+function setShapeSize(obj, w, h) {
+  const sw = obj.strokeWidth;
+  if (obj.type === 'ellipse') obj.set({ rx: Math.max(0.5, (w - sw) / 2), ry: Math.max(0.5, (h - sw) / 2) });
+  else obj.set({ width: Math.max(1, w - sw), height: Math.max(1, h - sw) });
+  obj.set({ scaleX: 1, scaleY: 1 });
+  obj.setCoords();
+  canvas.requestRenderAll();
+}
+
+function lineLength(obj) {
+  return Math.hypot(obj.width * obj.scaleX, obj.height * obj.scaleY);
+}
+
+function setLineLength(obj, len) {
+  const cur = lineLength(obj);
+  if (!cur || !len) return;
+  if (!obj.strokeUniform) {
+    // mantém a espessura visível ao redimensionar
+    const s = obj.width >= obj.height ? obj.scaleY : obj.scaleX;
+    obj.set({ strokeWidth: obj.strokeWidth * s, strokeUniform: true });
+  }
+  const k = len / cur;
+  obj.set({ scaleX: obj.scaleX * k, scaleY: obj.scaleY * k });
+  obj.setCoords();
+  canvas.requestRenderAll();
+}
+
+function sizeFields(obj, type) {
+  const inMm = state.sizeUnit === 'mm';
+  const toUnit = (px) => (inMm ? +(px / DPMM).toFixed(1) : Math.round(px));
+  const fromUnit = (v) => (inMm ? v * DPMM : v);
+  const attrs = { min: inMm ? 0.5 : 1, step: inMm ? 0.5 : 1 };
+  const box = document.createElement('div');
+  box.appendChild(field('Unidade de tamanho', select([['mm', 'Milímetros (mm)'], ['px', 'Pixels (300 dpi)']], state.sizeUnit, (v) => {
+    state.sizeUnit = v;
+    try { localStorage.setItem('ql-size-unit', v); } catch (_) { /* sem storage */ }
+    renderProps();
+  })));
+  if (type === 'line') {
+    box.appendChild(field('Comprimento', input('number', toUnit(lineLength(obj)), (v) => setLineLength(obj, fromUnit(v)), attrs)));
+  } else {
+    box.appendChild(grid(
+      field('Largura', input('number', toUnit(obj.getScaledWidth()), (v) => setShapeSize(obj, fromUnit(v), obj.getScaledHeight()), attrs)),
+      field('Altura', input('number', toUnit(obj.getScaledHeight()), (v) => setShapeSize(obj, obj.getScaledWidth(), fromUnit(v)), attrs)),
+    ));
+  }
+  return box;
+}
+
 function renderProps() {
   const obj = canvas.getActiveObject();
   const body = $('#props-body');
@@ -351,6 +468,7 @@ function renderProps() {
     p.textContent = 'Ajuste o tamanho pela largura de barra/módulo para manter a leitura nítida.';
     body.appendChild(p);
   } else if (type === 'shape' || type === 'line') {
+    body.appendChild(sizeFields(obj, type));
     body.appendChild(field('Espessura', input('number', obj.strokeWidth, (v) => setProp(obj, 'strokeWidth', v), { min: 1 })));
     if (type === 'shape') {
       body.appendChild(toggles([
@@ -476,10 +594,24 @@ async function copySelection() {
   return true;
 }
 
-async function paste() {
+/** Cola os elementos copiados; com `at` o canto superior esquerdo fica nesse ponto. */
+async function paste(at) {
   if (!clipboard.obj) return;
-  clipboard.pastes++;
-  insertClone(await cloneObject(clipboard.obj), 20 * clipboard.pastes);
+  const c = await cloneObject(clipboard.obj);
+  if (at) {
+    c.set({ left: at.x, top: at.y });
+    insertClone(c, 0);
+  } else {
+    clipboard.pastes++;
+    insertClone(c, 20 * clipboard.pastes);
+  }
+}
+
+/** Copia pelo evento do navegador, para que o Ctrl+V reconheça os elementos depois. */
+function copyFromButton() {
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (_) { /* sem suporte */ }
+  return ok ? Promise.resolve(true) : copySelection();
 }
 
 async function cut() {
@@ -518,8 +650,49 @@ $('#btn-undo').onclick = undo;
 $('#btn-redo').onclick = redo;
 $('#btn-del').onclick = removeSelected;
 $('#btn-dup').onclick = duplicate;
-$('#btn-copy').onclick = () => copySelection().then((ok) => ok && toast('Copiado'));
+$('#btn-copy').onclick = () => active() && copyFromButton().then(() => toast('Copiado'));
 $('#btn-paste').onclick = () => (clipboard.obj ? paste() : toast('Nada copiado', true));
+
+/* ---------- menu do botão direito ---------- */
+const ctxMenu = $('#ctx-menu');
+let ctxPoint = null;
+
+function hideContextMenu() { ctxMenu.hidden = true; }
+
+canvas.upperCanvasEl.addEventListener('contextmenu', (e) => {
+  if (active()?.isEditing) return;   // menu nativo ao editar texto
+  e.preventDefault();
+  const target = canvas.findTarget(e, false);
+  if (!target) canvas.discardActiveObject();
+  else if (!canvas.getActiveObjects().includes(target)) canvas.setActiveObject(target);
+  canvas.requestRenderAll();
+  ctxPoint = canvas.getPointer(e);
+  const has = !!active();
+  ctxMenu.querySelectorAll('[data-needs-sel]').forEach((b) => (b.disabled = !has));
+  ctxMenu.querySelector('[data-action="paste"]').disabled = !clipboard.obj;
+  ctxMenu.hidden = false;
+  const { innerWidth: W, innerHeight: H } = window;
+  ctxMenu.style.left = `${Math.min(e.clientX, W - ctxMenu.offsetWidth - 4)}px`;
+  ctxMenu.style.top = `${Math.min(e.clientY, H - ctxMenu.offsetHeight - 4)}px`;
+});
+
+const ctxActions = {
+  copy: () => copyFromButton(),
+  paste: () => paste(ctxPoint),
+  duplicate,
+  delete: removeSelected,
+};
+ctxMenu.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  hideContextMenu();
+  ctxActions[b.dataset.action]();
+});
+document.addEventListener('mousedown', (e) => { if (!ctxMenu.contains(e.target)) hideContextMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideContextMenu(); });
+window.addEventListener('blur', hideContextMenu);
+window.addEventListener('resize', hideContextMenu);
+$('#canvas-wrap').addEventListener('scroll', hideContextMenu);
 $('#btn-front').onclick = () => { active()?.bringToFront(); saveHistory(); };
 $('#btn-back').onclick = () => { active()?.sendToBack(); saveHistory(); };
 $('#btn-center-h').onclick = () => { const o = active(); if (o) { canvas.viewportCenterObjectH(o); o.setCoords(); saveHistory(); canvas.requestRenderAll(); } };
