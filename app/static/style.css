@@ -100,9 +100,30 @@ code { background: var(--code); padding: 1px 4px; border-radius: 4px; }
   background: repeating-linear-gradient(45deg, var(--stripe-a), var(--stripe-a) 10px, var(--stripe-b) 10px, var(--stripe-b) 20px);
   min-height: 300px;
 }
-.tape { background: var(--tape); padding: 14px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-.tape.round .canvas-container canvas { border-radius: 50%; }
-.canvas-container { box-shadow: 0 0 0 1px var(--frame); }
+/* a fita mostra o tamanho físico; a faixa cinza listrada é a margem que a impressora não imprime */
+.tape {
+  background: repeating-linear-gradient(45deg, #e6e8eb, #e6e8eb 5px, #d9dce0 5px, #d9dce0 10px);
+  border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,.12);
+}
+.tape.round, .tape.round .canvas-container canvas { border-radius: 50%; }
+.canvas-container { outline: 1px dashed #9aa0a8; }
+.tape.round .canvas-container { outline: none; }
+.tape { position: relative; }
+.margin {
+  position: absolute; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  white-space: nowrap; font-weight: 600; letter-spacing: .3px;
+  color: #8a9099; pointer-events: none; transition: background-color .15s;
+}
+.m-left { left: 0; top: 0; bottom: 0; writing-mode: vertical-rl; transform: rotate(180deg); }
+.m-right { right: 0; top: 0; bottom: 0; writing-mode: vertical-rl; }
+.m-top { top: 0; }
+.m-bottom { bottom: 0; }
+.margin.out { background: rgba(229, 72, 77, .35); color: #a3161c; }
+.tape.round .margin { color: transparent; }
+.margin-warn {
+  margin: 8px 0 0; padding: 6px 10px; border-radius: 6px; font-size: 13px; text-align: center;
+  background: rgba(229, 72, 77, .12); color: var(--danger); border: 1px solid rgba(229, 72, 77, .4);
+}
 
 #props-body .grid2 label { margin-bottom: 6px; }
 .btn-group { display: flex; gap: 4px; margin-bottom: 10px; }
@@ -178,3 +199,17 @@ button.close { border: none; background: none; font-size: 22px; line-height: 1; 
 .hist-row small { color: var(--muted); }
 .hist-row button.ghost { width: auto; margin: 0; }
 #fields-body label { margin-bottom: 8px; }
+
+/* ---------- menu do botão direito ---------- */
+.ctx-menu {
+  position: fixed; z-index: 20; min-width: 190px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+}
+.ctx-menu button {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%;
+  border: none; background: none; text-align: left; padding: 7px 10px;
+}
+.ctx-menu button:hover:not(:disabled) { background: var(--btn-hover); }
+.ctx-menu kbd { font: inherit; font-size: 12px; color: var(--muted); }
+.ctx-menu hr { border: none; border-top: 1px solid var(--line); margin: 4px 0; }
