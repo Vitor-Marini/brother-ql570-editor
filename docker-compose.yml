@@ -1,0 +1,26 @@
+services:
+  ql570:
+    build: .
+    image: ql570-web:latest
+    container_name: ql570
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8570}:8570"
+    environment:
+      # Set to require a password (HTTP Basic, any username)
+      APP_PASSWORD: "${APP_PASSWORD:-}"
+      # Pin the device if there is more than one USB printer, e.g. /dev/usb/lp0
+      QL_DEVICE: "${QL_DEVICE:-}"
+    volumes:
+      - ql-data:/data
+      # Mounting the directory (not the file) lets the printer be unplugged/replugged
+      - /dev/usb:/dev/usb
+      - /dev/bus/usb:/dev/bus/usb
+    device_cgroup_rules:
+      - "c 180:* rmw"   # /dev/usb/lp* (usblp)
+      - "c 189:* rmw"   # /dev/bus/usb/* (pyusb)
+    group_add:
+      - "${LP_GID:-7}"  # GID of the "lp" group on the host: getent group lp
+
+volumes:
+  ql-data:

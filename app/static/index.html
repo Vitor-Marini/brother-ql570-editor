@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QL-570 Etiquetas</title>
+<link rel="stylesheet" href="/static/vendor/fonts.css">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/vendor/fabric.min.js"></script>
+<script src="/static/vendor/JsBarcode.all.min.js"></script>
+<script src="/static/vendor/qrcode.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>QL-570 <span>Etiquetas</span></h1>
+  <div id="status" class="status off" title="Clique para atualizar">
+    <span class="dot"></span><span id="status-text">Verificando…</span>
+  </div>
+</header>
+
+<main>
+  <aside class="panel left">
+    <section>
+      <h2>Predefinição</h2>
+      <div class="row"><select id="preset-select"></select></div>
+      <div class="grid2">
+        <button id="btn-preset-save" class="ghost" title="Salva mídia, orientação, comprimento e opções de impressão">Salvar atual</button>
+        <button id="btn-preset-del" class="ghost danger" disabled>Excluir</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Etiqueta</h2>
+      <label>Mídia
+        <select id="label-select"></select>
+      </label>
+      <button id="btn-detect" class="ghost">Usar mídia da impressora</button>
+      <label id="length-wrap">Comprimento (mm)
+        <input type="number" id="length-mm" min="10" max="1000" value="90">
+      </label>
+      <label>Orientação
+        <select id="orientation">
+          <option value="landscape">Horizontal (texto ao longo da fita)</option>
+          <option value="portrait">Vertical (texto atravessando a fita)</option>
+        </select>
+      </label>
+      <p class="hint" id="label-info"></p>
+    </section>
+
+    <section>
+      <h2>Inserir</h2>
+      <div class="grid2">
+        <button data-add="text">Texto</button>
+        <button data-add="barcode">Cód. barras</button>
+        <button data-add="qr">QR Code</button>
+        <button data-add="image">Imagem</button>
+        <button data-add="rect">Retângulo</button>
+        <button data-add="ellipse">Elipse</button>
+        <button data-add="line">Linha</button>
+        <button data-add="date">Data</button>
+      </div>
+      <input type="file" id="image-input" accept="image/*" hidden>
+    </section>
+
+    <section>
+      <h2>Modelos</h2>
+      <button id="btn-gallery" class="ghost strong">Galeria de etiquetas…</button>
+      <button id="btn-tpl-save" class="ghost">Salvar modelo</button>
+      <button id="btn-new" class="ghost">Nova etiqueta em branco</button>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="toolbar">
+      <button id="btn-undo" title="Desfazer (Ctrl+Z)">↶</button>
+      <button id="btn-redo" title="Refazer (Ctrl+Y)">↷</button>
+      <span class="sep"></span>
+      <button id="btn-center-h" title="Centralizar horizontalmente">⇔</button>
+      <button id="btn-center-v" title="Centralizar verticalmente">⇕</button>
+      <button id="btn-front" title="Trazer para frente">⬆</button>
+      <button id="btn-back" title="Enviar para trás">⬇</button>
+      <button id="btn-dup" title="Duplicar (Ctrl+D)">⧉</button>
+      <button id="btn-del" title="Excluir (Del)">🗑</button>
+      <span class="sep"></span>
+      <label class="inline">Zoom <input type="range" id="zoom" min="0.3" max="3" step="0.05" value="1"></label>
+    </div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="tape" id="tape"><canvas id="c"></canvas></div>
+    </div>
+    <p class="hint center">Use <code>{{coluna}}</code> em textos, códigos de barras e QR para imprimir em lote com CSV.</p>
+  </section>
+
+  <aside class="panel right">
+    <section id="props">
+      <h2>Propriedades</h2>
+      <p class="hint" id="props-empty">Selecione um elemento.</p>
+      <div id="props-body" hidden></div>
+    </section>
+
+    <section id="fields" hidden>
+      <h2>Campos</h2>
+      <div id="fields-body"></div>
+      <p class="hint">Valores dos <code>{{campos}}</code> usados na impressão. Automáticos: <code>{{hoje}}</code> <code>{{hora}}</code> <code>{{n}}</code>.</p>
+    </section>
+
+    <section>
+      <h2>Impressão</h2>
+      <div class="grid2">
+        <label>Cópias <input type="number" id="copies" min="1" max="500" value="1"></label>
+        <label title="Valor inicial de {{n}}">Nº inicial <input type="number" id="n-start" min="0" value="1"></label>
+      </div>
+      <label>Limiar preto/branco <span id="thr-val">128</span>
+        <input type="range" id="threshold" min="1" max="254" value="128">
+      </label>
+      <label class="check"><input type="checkbox" id="dither"> Pontilhado (para fotos)</label>
+      <label class="check"><input type="checkbox" id="cut" checked> Cortar cada etiqueta</label>
+      <div class="grid2">
+        <button id="btn-preview" class="ghost">Pré-visualizar</button>
+        <button id="btn-bin" class="ghost">Baixar .bin</button>
+      </div>
+      <button id="btn-print" class="primary">Imprimir</button>
+      <button id="btn-history" class="ghost history-btn">Histórico de impressões…</button>
+    </section>
+
+    <section>
+      <h2>Lote (CSV)</h2>
+      <input type="file" id="csv-input" accept=".csv,text/csv">
+      <p class="hint" id="csv-info">Primeira linha = nomes das colunas.</p>
+      <button id="btn-csv-example" class="ghost">Baixar CSV de exemplo</button>
+      <button id="btn-batch" class="ghost" disabled>Imprimir lote</button>
+    </section>
+  </aside>
+</main>
+
+<dialog id="preview-dialog">
+  <h2>Pré-visualização (exatamente como será impresso)</h2>
+  <div class="preview-box"><img id="preview-img" alt="Pré-visualização"></div>
+  <form method="dialog"><button class="primary">Fechar</button></form>
+</dialog>
+
+<dialog id="gallery" class="wide">
+  <div class="dialog-head">
+    <div class="tabs">
+      <button data-tab="defaults" class="active">Etiquetas padrão</button>
+      <button data-tab="mine">Meus modelos</button>
+    </div>
+    <form method="dialog"><button class="close" title="Fechar">×</button></form>
+  </div>
+  <div id="gallery-body" class="dialog-body"></div>
+</dialog>
+
+<dialog id="history-dialog" class="wide">
+  <div class="dialog-head">
+    <h2>Histórico de impressões</h2>
+    <div class="head-actions">
+      <button id="btn-history-clear" class="ghost danger">Limpar</button>
+      <form method="dialog"><button class="close" title="Fechar">×</button></form>
+    </div>
+  </div>
+  <div id="history-body" class="dialog-body"></div>
+</dialog>
+
+<div id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

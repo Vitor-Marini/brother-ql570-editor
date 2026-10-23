@@ -1,0 +1,7 @@
+# Lets members of the "lp" group access the Brother QL-570 without sudo.
+# Installation:
+#   sudo cp 99-brother-ql.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload && sudo udevadm trigger
+#   sudo usermod -aG lp $USER   (then log out and back in)
+SUBSYSTEM=="usbmisc", ATTRS{idVendor}=="04f9", ATTRS{idProduct}=="2028", MODE="0660", GROUP="lp"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="04f9", ATTRS{idProduct}=="2028", MODE="0660", GROUP="lp"

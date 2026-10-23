@@ -1,0 +1,143 @@
+[
+  {
+    "id": "endereco", "name": "Endereço (destinatário)", "category": "Envio",
+    "description": "Etiqueta de endereço pré-cortada 29 × 90 mm.",
+    "label": "29x90", "orientation": "landscape",
+    "fields": {"nome": "Maria da Silva", "endereco": "Rua das Flores, 123 - Apto 45", "bairro": "Centro",
+               "cidade": "São Paulo", "uf": "SP", "cep": "01001-000"},
+    "items": [
+      {"t": "text", "text": "{{nome}}", "x": 0.04, "y": 0.07, "w": 0.92, "size": 0.19, "bold": true},
+      {"t": "text", "text": "{{endereco}}", "x": 0.04, "y": 0.35, "w": 0.92, "size": 0.14},
+      {"t": "text", "text": "{{bairro}} · {{cidade}} - {{uf}}", "x": 0.04, "y": 0.55, "w": 0.92, "size": 0.14},
+      {"t": "text", "text": "CEP {{cep}}", "x": 0.04, "y": 0.75, "w": 0.92, "size": 0.14, "bold": true}
+    ]
+  },
+  {
+    "id": "remetente", "name": "Remetente", "category": "Envio",
+    "description": "Bloco de remetente com faixa invertida.",
+    "label": "62", "orientation": "landscape", "length_mm": 70,
+    "fields": {"nome": "Loja Exemplo", "endereco": "Av. Paulista, 1000", "cidade": "São Paulo", "uf": "SP",
+               "cep": "01310-100", "telefone": "(11) 99999-0000"},
+    "items": [
+      {"t": "rect", "x": 0, "y": 0, "w": 1, "h": 0.18, "fill": true},
+      {"t": "text", "text": "REMETENTE", "x": 0.04, "y": 0.035, "w": 0.92, "size": 0.11, "bold": true, "invert": true},
+      {"t": "text", "text": "{{nome}}", "x": 0.04, "y": 0.25, "w": 0.92, "size": 0.13, "bold": true},
+      {"t": "text", "text": "{{endereco}}", "x": 0.04, "y": 0.45, "w": 0.92, "size": 0.1},
+      {"t": "text", "text": "{{cidade}}/{{uf}} · {{cep}}", "x": 0.04, "y": 0.62, "w": 0.92, "size": 0.1},
+      {"t": "text", "text": "Tel. {{telefone}}", "x": 0.04, "y": 0.8, "w": 0.92, "size": 0.1}
+    ]
+  },
+  {
+    "id": "fragil", "name": "FRÁGIL", "category": "Envio",
+    "description": "Aviso de manuseio para caixas.",
+    "label": "62", "orientation": "landscape", "length_mm": 80, "fields": {},
+    "items": [
+      {"t": "rect", "x": 0.02, "y": 0.03, "w": 0.96, "h": 0.94, "sw": 10},
+      {"t": "text", "text": "FRÁGIL", "x": 0.04, "y": 0.12, "w": 0.92, "size": 0.45, "font": "Bebas Neue", "align": "center"},
+      {"t": "text", "text": "Manuseie com cuidado\nEste lado para cima ↑", "x": 0.06, "y": 0.68, "w": 0.88, "size": 0.08, "align": "center"}
+    ]
+  },
+  {
+    "id": "preco", "name": "Preço de produto", "category": "Varejo",
+    "description": "Nome, preço em destaque e código EAN-13.",
+    "label": "62", "orientation": "landscape", "length_mm": 80,
+    "fields": {"produto": "Café Torrado 500 g", "preco": "18,90", "codigo": "7891234567895"},
+    "items": [
+      {"t": "text", "text": "{{produto}}", "x": 0.04, "y": 0.05, "w": 0.92, "size": 0.1, "bold": true, "align": "center"},
+      {"t": "text", "text": "R$ {{preco}}", "x": 0.02, "y": 0.2, "w": 0.96, "size": 0.24, "bold": true, "align": "center"},
+      {"t": "barcode", "value": "{{codigo}}", "format": "EAN13", "x": "center", "y": 0.6, "h": 0.25, "module": 3}
+    ]
+  },
+  {
+    "id": "estoque", "name": "Caixa de estoque (SKU)", "category": "Varejo",
+    "description": "Descrição, SKU, localização e código de barras.",
+    "label": "62", "orientation": "landscape", "length_mm": 100,
+    "fields": {"descricao": "Parafuso sextavado M8 × 40", "sku": "PRF-M8-040", "local": "Corredor B · Prateleira 3"},
+    "items": [
+      {"t": "text", "text": "{{descricao}}", "x": 0.04, "y": 0.05, "w": 0.92, "size": 0.1, "bold": true},
+      {"t": "text", "text": "SKU {{sku}}", "x": 0.04, "y": 0.22, "w": 0.92, "size": 0.08, "font": "Roboto Mono"},
+      {"t": "text", "text": "Local: {{local}}", "x": 0.04, "y": 0.35, "w": 0.92, "size": 0.08},
+      {"t": "barcode", "value": "{{sku}}", "format": "CODE128", "x": "center", "y": 0.52, "h": 0.3, "module": 4}
+    ]
+  },
+  {
+    "id": "patrimonio", "name": "Patrimônio com QR", "category": "Escritório",
+    "description": "Numeração sequencial automática ({{n}}) — use Cópias para gerar uma série.",
+    "label": "62x29", "orientation": "portrait",
+    "fields": {"empresa": "ACME"},
+    "items": [
+      {"t": "qr", "value": "{{empresa}}-{{n}}", "x": 0.02, "y": 0.06, "size": 0.88},
+      {"t": "text", "text": "PATRIMÔNIO", "x": 0.4, "y": 0.08, "w": 0.58, "size": 0.13, "bold": true},
+      {"t": "text", "text": "{{empresa}}", "x": 0.4, "y": 0.28, "w": 0.58, "size": 0.13},
+      {"t": "text", "text": "Nº {{n}}", "x": 0.4, "y": 0.52, "w": 0.58, "size": 0.26, "bold": true}
+    ]
+  },
+  {
+    "id": "pasta", "name": "Lombada de pasta", "category": "Escritório",
+    "description": "Título grande e ano para pastas e arquivos.",
+    "label": "29", "orientation": "landscape", "length_mm": 100,
+    "fields": {"titulo": "NOTAS FISCAIS", "ano": "2026"},
+    "items": [
+      {"t": "text", "text": "{{titulo}}", "x": 0.03, "y": 0.18, "w": 0.75, "size": 0.5, "font": "Oswald", "bold": true},
+      {"t": "line", "x1": 0.8, "y1": 0.12, "x2": 0.8, "y2": 0.88, "sw": 5},
+      {"t": "text", "text": "{{ano}}", "x": 0.82, "y": 0.25, "w": 0.16, "size": 0.4, "font": "Oswald", "align": "center"}
+    ]
+  },
+  {
+    "id": "cabo", "name": "Identificação de cabo", "category": "Escritório",
+    "description": "Fita estreita de 12 mm para fios e cabos.",
+    "label": "12", "orientation": "landscape", "length_mm": 40,
+    "fields": {"cabo": "SERVIDOR-01"},
+    "items": [
+      {"t": "text", "text": "{{cabo}}", "x": 0.02, "y": 0.12, "w": 0.96, "size": 0.65, "bold": true, "align": "center"}
+    ]
+  },
+  {
+    "id": "validade", "name": "Validade de alimentos", "category": "Cozinha",
+    "description": "Data de manipulação automática ({{hoje}}) e validade.",
+    "label": "62", "orientation": "landscape", "length_mm": 70,
+    "fields": {"produto": "Molho de tomate", "validade": "20/10/2026", "conservacao": "Refrigerado 0 a 5 °C", "responsavel": "Ana"},
+    "items": [
+      {"t": "rect", "x": 0, "y": 0, "w": 1, "h": 0.19, "fill": true},
+      {"t": "text", "text": "{{produto}}", "x": 0.04, "y": 0.035, "w": 0.92, "size": 0.11, "bold": true, "invert": true},
+      {"t": "text", "text": "Manipulação: {{hoje}}", "x": 0.04, "y": 0.26, "w": 0.92, "size": 0.09},
+      {"t": "text", "text": "Validade: {{validade}}", "x": 0.04, "y": 0.42, "w": 0.92, "size": 0.12, "bold": true},
+      {"t": "text", "text": "Conservação: {{conservacao}}", "x": 0.04, "y": 0.63, "w": 0.92, "size": 0.08},
+      {"t": "text", "text": "Responsável: {{responsavel}}", "x": 0.04, "y": 0.8, "w": 0.92, "size": 0.08}
+    ]
+  },
+  {
+    "id": "wifi", "name": "Wi-Fi com QR", "category": "Casa",
+    "description": "O celular conecta na rede ao ler o QR.",
+    "label": "62", "orientation": "landscape", "length_mm": 90,
+    "fields": {"rede": "MinhaCasa", "senha": "senha-secreta"},
+    "items": [
+      {"t": "qr", "value": "WIFI:T:WPA;S:{{rede}};P:{{senha}};;", "x": 0.03, "y": 0.08, "size": 0.84},
+      {"t": "text", "text": "Wi-Fi", "x": 0.64, "y": 0.1, "w": 0.34, "size": 0.15, "bold": true},
+      {"t": "text", "text": "Rede\n{{rede}}", "x": 0.64, "y": 0.36, "w": 0.34, "size": 0.075},
+      {"t": "text", "text": "Senha\n{{senha}}", "x": 0.64, "y": 0.58, "w": 0.34, "size": 0.075, "bold": true},
+      {"t": "text", "text": "Aponte a câmera do celular", "x": 0.64, "y": 0.84, "w": 0.34, "size": 0.045}
+    ]
+  },
+  {
+    "id": "cracha", "name": "Crachá “Olá, meu nome é”", "category": "Eventos",
+    "description": "Etiqueta de nome para eventos, 62 × 100 mm.",
+    "label": "62x100", "orientation": "landscape",
+    "fields": {"nome": "Ana", "empresa": "ACME"},
+    "items": [
+      {"t": "rect", "x": 0, "y": 0, "w": 1, "h": 0.27, "fill": true},
+      {"t": "text", "text": "OLÁ, MEU NOME É", "x": 0.04, "y": 0.06, "w": 0.92, "size": 0.13, "bold": true, "invert": true, "align": "center"},
+      {"t": "text", "text": "{{nome}}", "x": 0.04, "y": 0.36, "w": 0.92, "size": 0.25, "bold": true, "align": "center"},
+      {"t": "text", "text": "{{empresa}}", "x": 0.04, "y": 0.75, "w": 0.92, "size": 0.1, "align": "center"}
+    ]
+  },
+  {
+    "id": "texto", "name": "Texto grande", "category": "Geral",
+    "description": "Uma linha de texto ocupando a etiqueta.",
+    "label": "62", "orientation": "landscape", "length_mm": 90,
+    "fields": {"texto": "ETIQUETA"},
+    "items": [
+      {"t": "text", "text": "{{texto}}", "x": 0.03, "y": 0.28, "w": 0.94, "size": 0.35, "bold": true, "align": "center"}
+    ]
+  }
+]
