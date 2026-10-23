@@ -112,3 +112,7 @@ Bundled in `app/static/vendor`: [Fabric.js](https://github.com/fabricjs/fabric.j
 [Fontsource](https://fontsource.org/) (SIL Open Font License).
 
 Brother and QL-570 are trademarks of Brother Industries, Ltd. This project is not affiliated with Brother.
+
+## License
+
+[MIT](LICENSE) © Vitor Marini
