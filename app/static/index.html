@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QL-570 Etiquetas</title>
+<script>
+  /* aplica o tema salvo antes de desenhar a página, sem piscar */
+  try { const t = localStorage.getItem('ql-theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
+</script>
 <link rel="stylesheet" href="/static/vendor/fonts.css">
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/vendor/fabric.min.js"></script>
@@ -13,8 +17,11 @@
 <body>
 <header>
   <h1>QL-570 <span>Etiquetas</span></h1>
-  <div id="status" class="status off" title="Clique para atualizar">
-    <span class="dot"></span><span id="status-text">Verificando…</span>
+  <div class="header-actions">
+    <div id="status" class="status off" title="Clique para atualizar">
+      <span class="dot"></span><span id="status-text">Verificando…</span>
+    </div>
+    <button id="btn-theme" title="Alternar tema"></button>
   </div>
 </header>
 
