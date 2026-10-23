@@ -1125,6 +1125,22 @@ $('#btn-detect').onclick = async () => {
   else toast(state.status?.error || 'Não foi possível detectar a mídia', true);
 };
 
+/* ---------- tema claro / escuro ---------- */
+const THEMES = [['', '◐ Automático'], ['light', '☀ Claro'], ['dark', '☾ Escuro']];
+
+function setTheme(theme) {
+  if (theme) document.documentElement.dataset.theme = theme;
+  else delete document.documentElement.dataset.theme;
+  $('#btn-theme').textContent = THEMES.find(([t]) => t === theme)[1];
+  try { theme ? localStorage.setItem('ql-theme', theme) : localStorage.removeItem('ql-theme'); } catch (_) { /* sem storage */ }
+}
+
+$('#btn-theme').onclick = () => {
+  const i = THEMES.findIndex(([t]) => t === (document.documentElement.dataset.theme || ''));
+  setTheme(THEMES[(i + 1) % THEMES.length][0]);
+};
+setTheme(document.documentElement.dataset.theme || '');
+
 /* ---------- inicialização ---------- */
 function setLabel(id, layout = true) {
   state.label = state.labels.find((l) => l.id === id) || state.labels[0];
