@@ -213,9 +213,7 @@ const adders = {
 document.querySelectorAll('[data-add]').forEach((b) =>
   b.addEventListener('click', () => adders[b.dataset.add]()));
 
-$('#image-input').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+function addImageFile(file) {
   const reader = new FileReader();
   reader.onload = () => fabric.Image.fromURL(reader.result, (img) => {
     const s = Math.min(state.docW * 0.8 / img.width, state.docH * 0.9 / img.height);
@@ -223,6 +221,12 @@ $('#image-input').addEventListener('change', (e) => {
     place(img);
   });
   reader.readAsDataURL(file);
+}
+
+$('#image-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  addImageFile(file);
   e.target.value = '';
 });
 
@@ -424,27 +428,98 @@ function removeSelected() {
   objs.forEach((o) => canvas.remove(o));
 }
 
-function duplicate() {
-  const obj = active();
-  if (!obj) return;
-  obj.clone((c) => {
-    c.set({ left: obj.left + 20, top: obj.top + 20 });
-    if (c.type === 'activeSelection') {
-      c.canvas = canvas;
-      c.forEachObject((o) => canvas.add(o));
-      c.setCoords();
-    } else {
-      canvas.add(c);
-    }
-    canvas.setActiveObject(c);
-    canvas.requestRenderAll();
-  }, EXTRA_PROPS);
+function cloneObject(obj) {
+  return new Promise((resolve) => obj.clone((c) => {
+    // clone() compartilha o objeto `data` com o original; separa os dois
+    [c, ...(c.getObjects?.() || [])].forEach((o) => { if (o.data) o.data = structuredClone(o.data); });
+    resolve(c);
+  }, EXTRA_PROPS));
 }
+
+/** Adiciona um clone (objeto ou seleção múltipla) deslocado de `offset`. */
+function insertClone(c, offset) {
+  c.set({ left: c.left + offset, top: c.top + offset });
+  history.paused = true;
+  if (c.type === 'activeSelection') {
+    c.canvas = canvas;
+    c.forEachObject((o) => canvas.add(o));
+    c.setCoords();
+  } else {
+    canvas.add(c);
+  }
+  history.paused = false;
+  canvas.setActiveObject(c);
+  canvas.requestRenderAll();
+  saveHistory();
+}
+
+async function duplicate() {
+  const obj = active();
+  if (obj) insertClone(await cloneObject(obj), 20);
+}
+
+/* ---------- copiar / colar ---------- */
+const CLIP_TYPE = 'application/x-ql570-elementos';
+const clipboard = { obj: null, text: '', pastes: 0 };
+
+/** Texto dos elementos selecionados, para colar em outros programas. */
+function selectionText(obj) {
+  return (obj.getObjects?.() || [obj]).filter((o) => o.data?.type === 'text').map((o) => o.text).join('\n');
+}
+
+async function copySelection() {
+  const obj = active();
+  if (!obj) return false;
+  clipboard.text = selectionText(obj);
+  clipboard.pastes = 0;
+  clipboard.obj = await cloneObject(obj);
+  return true;
+}
+
+async function paste() {
+  if (!clipboard.obj) return;
+  clipboard.pastes++;
+  insertClone(await cloneObject(clipboard.obj), 20 * clipboard.pastes);
+}
+
+async function cut() {
+  if (await copySelection()) removeSelected();
+}
+
+function editorHasFocus() {
+  const tag = document.activeElement.tagName;
+  return !(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active()?.isEditing
+    || document.querySelector('dialog[open]'));
+}
+
+function onCopy(e, isCut) {
+  if (!editorHasFocus() || !active() || !document.getSelection().isCollapsed) return;
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', selectionText(active()));
+  e.clipboardData.setData(CLIP_TYPE, '1');
+  isCut ? cut() : copySelection();
+}
+
+document.addEventListener('copy', (e) => onCopy(e, false));
+document.addEventListener('cut', (e) => onCopy(e, true));
+document.addEventListener('paste', (e) => {
+  if (!editorHasFocus()) return;
+  const data = e.clipboardData;
+  const image = [...data.files].find((f) => f.type.startsWith('image/'));
+  const text = data.getData('text/plain');
+  e.preventDefault();
+  // elementos copiados do próprio editor têm prioridade sobre o conteúdo externo
+  if (clipboard.obj && (data.types.includes(CLIP_TYPE) || (!image && text === clipboard.text))) paste();
+  else if (image) addImageFile(image);
+  else if (text.trim()) place(newTextbox(text.replace(/\r\n/g, '\n')));
+});
 
 $('#btn-undo').onclick = undo;
 $('#btn-redo').onclick = redo;
 $('#btn-del').onclick = removeSelected;
 $('#btn-dup').onclick = duplicate;
+$('#btn-copy').onclick = () => copySelection().then((ok) => ok && toast('Copiado'));
+$('#btn-paste').onclick = () => (clipboard.obj ? paste() : toast('Nada copiado', true));
 $('#btn-front').onclick = () => { active()?.bringToFront(); saveHistory(); };
 $('#btn-back').onclick = () => { active()?.sendToBack(); saveHistory(); };
 $('#btn-center-h').onclick = () => { const o = active(); if (o) { canvas.viewportCenterObjectH(o); o.setCoords(); saveHistory(); canvas.requestRenderAll(); } };
@@ -452,8 +527,7 @@ $('#btn-center-v').onclick = () => { const o = active(); if (o) { canvas.viewpor
 $('#zoom').oninput = (e) => setZoom(+e.target.value);
 
 document.addEventListener('keydown', (e) => {
-  const tag = document.activeElement.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active()?.isEditing) return;
+  if (!editorHasFocus()) return;
   const ctrl = e.ctrlKey || e.metaKey;
   if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if (ctrl && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
